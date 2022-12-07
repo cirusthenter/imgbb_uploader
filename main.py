@@ -1,8 +1,8 @@
 import sys
+import os
 from PIL import Image
 import subprocess
 from typing import List
-import os
 import imgbbpy
 import pyheif
 from pdf2image import convert_from_path
@@ -65,21 +65,29 @@ def convert_heic(path: str, old_extension='.heic', new_extension='.jpeg') -> str
 
 def convert_pdf(path: str, old_extension='.pdf', new_extension='.png') -> str:
     images = convert_from_path(path)
+    new_names = []
     for i, image in enumerate(images):
         new_name = path.replace(old_extension,  f'-{i}' + new_extension)
         image.save(new_name, new_extension[1:])
-    return new_name
+        new_names.append(new_name)
+    return new_names
 
 
 def upload_to_imgbb(path_to_file: str):
-    _, extension = os.path.splitext(path_to_file)
-    if extension in [".heic", ".HEIC"]:
-        path_to_file = convert_heic(path_to_file, extension)
-    if extension in [".pdf", ".PDF"]:
-        path_to_file = convert_pdf(path_to_file, extension)
     # Need to set `export IMGBB_API_KEY=xxxxyyyyyzzzzz` in ~/.zshrc
     IMGBB_API_KEY = os.environ["IMGBB_API_KEY"]
     client = imgbbpy.SyncClient(IMGBB_API_KEY)
+    _, extension = os.path.splitext(path_to_file)
+    if extension in [".pdf", ".PDF"]:
+        paths_to_file = convert_pdf(path_to_file, extension)
+        for path_to_file in paths_to_file:
+            image = client.upload(file=path_to_file)
+            print(f'![]({image.url})')
+            print()
+        return
+
+    if extension in [".heic", ".HEIC"]:
+        path_to_file = convert_heic(path_to_file, extension)
     image = client.upload(file=path_to_file)
     print(f'![]({image.url})')
     print()
