@@ -3,3 +3,5 @@
 
 # track this file
 !.gitignore
+!README.md
+!main.py
